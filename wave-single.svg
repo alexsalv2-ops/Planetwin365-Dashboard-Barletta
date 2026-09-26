@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 210" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="r1" x1="0" x2="1">
+      <stop offset="0" stop-color="#ff6a78"/>
+      <stop offset=".55" stop-color="#ef283a"/>
+      <stop offset="1" stop-color="#b70d1f"/>
+    </linearGradient>
+    <linearGradient id="r2" x1="0" x2="1">
+      <stop offset="0" stop-color="#f03143"/>
+      <stop offset=".5" stop-color="#d31328"/>
+      <stop offset="1" stop-color="#a80b1c"/>
+    </linearGradient>
+    <linearGradient id="r3" x1="0" x2="1">
+      <stop offset="0" stop-color="#d51529"/>
+      <stop offset=".5" stop-color="#c60f23"/>
+      <stop offset="1" stop-color="#9d0817"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 82 C180 138 330 50 525 91 C750 139 912 121 1100 64 C1300 3 1465 18 1600 57 L1600 210 L0 210 Z" fill="#ffd8dc"/>
+  <path d="M0 104 C205 151 360 63 553 105 C770 151 930 135 1125 80 C1315 25 1472 34 1600 68 L1600 210 L0 210 Z" fill="url(#r1)" opacity=".86"/>
+  <path d="M0 122 C210 168 388 83 575 119 C790 160 956 148 1137 99 C1321 50 1482 48 1600 78 L1600 210 L0 210 Z" fill="url(#r2)" opacity=".96"/>
+  <path d="M0 143 C208 181 405 104 602 137 C815 171 981 161 1162 119 C1345 76 1491 70 1600 91 L1600 210 L0 210 Z" fill="url(#r3)"/>
+</svg>

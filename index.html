@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#202020">
+  <title>Planetwin365 Barletta Dashboard</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+  <header class="hero planet-hero">
+    <img class="brand-logo planet-logo" src="planetwin365-logo.png" alt="Planetwin365">
+    <div class="hero-title">
+      <div class="eyebrow">BARLETTA · DASHBOARD</div>
+      <h1>Planetwin365 Barletta</h1>
+      <p>Controllo rendiconti, giocate e statistiche</p>
+    </div>
+    <button class="refresh" id="refreshBtn" aria-label="Aggiorna">↻</button>
+  </header>
+
+  <nav class="main-nav">
+    <button class="active" data-view="dashboard">⌂ Dashboard</button>
+    <button data-view="history">◉ Storico</button>
+    <button data-view="master">🔒 Master</button>
+    <button data-view="settings">⚙ Impostazioni</button>
+  </nav>
+
+  <main>
+    <section id="dashboardView" class="view active">
+      <div class="period-head">
+        <button id="prevPeriod" class="arrow">‹</button>
+        <div class="period-title">
+          <span id="periodKind">MESE IN VISTA</span>
+          <strong id="periodTitle">—</strong>
+        </div>
+        <button id="nextPeriod" class="arrow">›</button>
+      </div>
+
+      <div class="period-panel">
+        <label>Periodo
+          <select id="periodType">
+            <option value="today">Oggi</option>
+            <option value="currentWeek">Settimana corrente</option>
+            <option value="currentMonth" selected>Mese corrente</option>
+            <option value="previousMonth">Mese precedente</option>
+            <option value="specificMonth">Mese specifico</option>
+            <option value="semester">Semestre</option>
+            <option value="currentYear">Anno corrente</option>
+            <option value="all">Cumulato totale</option>
+            <option value="day">Giorno specifico</option>
+            <option value="range">Intervallo date</option>
+          </select>
+        </label>
+        <div id="periodExtra"></div>
+      </div>
+
+      <section class="kpi-grid" id="kpiGrid"></section>
+
+      <div class="dashboard-grid">
+        <section class="panel chart-panel">
+          <div class="panel-head">
+            <div><h2>▥ Andamento mensile</h2><p>Giocato, Pagato e Netto</p></div>
+            <span class="pill" id="dayCount">0 giorni</span>
+          </div>
+          <div class="chart-wrap"><canvas id="trendChart" width="1200" height="420"></canvas></div>
+        </section>
+
+        <section class="panel recent-panel">
+          <div class="panel-head"><h2>▣ Ultimi giorni</h2><button class="link-button" data-view="history">Vedi storico →</button></div>
+          <div id="recentDays"></div>
+          <div class="accounts-box">
+            <div><span>Conti aperti</span><strong id="accountsTotal">0</strong></div>
+            <small>Totale periodo</small>
+          </div>
+        </section>
+      </div>
+
+      <section class="detail-grid">
+        <article class="detail-card sport"><h3>⚽ Sport Agenzia</h3><div id="sportDetail"></div></article>
+        <article class="detail-card virtual"><h3>🎮 Virtual Agenzia</h3><div id="virtualDetail"></div></article>
+        <article class="detail-card vlt"><h3>▥ VLT</h3><div id="vltDetail"></div></article>
+        <article class="detail-card online"><h3>Online</h3><p class="subtle">Sport + Virtual + Casinò + Poker</p><div id="onlineDetail"></div></article>
+      </section>
+    </section>
+
+    <section id="historyView" class="view">
+      <div class="section-title">
+        <div><span class="eyebrow">Archivio</span><h2>Storico giornate</h2><p>Sport, Virtual, VLT e Online sempre distinti.</p></div>
+        <input id="historyMonth" type="month">
+      </div>
+      <div id="historyList"></div>
+    </section>
+
+    <section id="masterView" class="view">
+      <div id="masterLocked" class="master-lock panel">
+        <div class="lock-icon">🔒</div>
+        <div><span class="eyebrow">Area riservata</span><h2>Accesso Master</h2><p>Inserimento, import PDF e modifica dei dati.</p></div>
+        <div class="login-row"><input id="masterPassword" type="password" placeholder="Password Master" autocomplete="current-password"><button id="masterLoginBtn" class="primary-btn">Accedi</button></div>
+        <p class="master-note">La password protegge l'interfaccia. Le modifiche su GitHub richiedono anche il token personale salvato solo su questo dispositivo.</p>
+      </div>
+
+      <div id="masterUnlocked" class="master-area" hidden>
+        <div class="section-title">
+          <div><span class="eyebrow">Area Master</span><h2>Gestione dati</h2><p>Carica il PDF di chiusura Planetwin365 oppure inserisci i valori manualmente.</p></div>
+          <button id="masterLogoutBtn" class="secondary-btn">Esci</button>
+        </div>
+
+        <div class="master-grid planet-master-grid">
+          <section class="panel master-entry">
+            <div class="panel-head">
+              <div><h2>Nuova giornata / Modifica</h2><p>Se la data esiste, puoi caricarla e sovrascriverla.</p></div>
+              <button id="loadDayBtn" class="secondary-btn">Carica giornata</button>
+            </div>
+            <div class="entry-body">
+              <label class="field-label">Data<input id="entryDate" type="date"></label>
+
+              <div class="entry-groups">
+                <fieldset class="entry-group sport-group">
+                  <legend>Sport Agenzia</legend>
+                  <div class="four-fields">
+                    <label>Venduto<input id="spEmessi" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Annullato<input id="spAnnulli" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Pagato<input id="spPagati" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Rimborsato<input id="spRimborsati" inputmode="decimal" placeholder="0,00"></label>
+                  </div>
+                  <div class="calc-preview"><span>Giocato netto <b id="spNetPlayed">€0,00</b></span><span>Pagato netto <b id="spNetPaid">€0,00</b></span></div>
+                </fieldset>
+
+                <fieldset class="entry-group virtual-group">
+                  <legend>Virtual Agenzia</legend>
+                  <div class="four-fields">
+                    <label>Venduto<input id="vtEmessi" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Annullato<input id="vtAnnulli" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Pagato<input id="vtPagati" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Rimborsato<input id="vtRimborsati" inputmode="decimal" placeholder="0,00"></label>
+                  </div>
+                  <div class="calc-preview"><span>Giocato netto <b id="vtNetPlayed">€0,00</b></span><span>Pagato netto <b id="vtNetPaid">€0,00</b></span></div>
+                </fieldset>
+
+                <fieldset class="entry-group">
+                  <legend>VLT</legend>
+                  <div class="two-fields"><label>Incassati<input id="awG" inputmode="decimal" placeholder="0,00"></label><label>Pagati<input id="awP" inputmode="decimal" placeholder="0,00"></label></div>
+                </fieldset>
+
+                <fieldset class="entry-group">
+                  <legend>Online</legend>
+                  <div class="online-entry-grid">
+                    <div><strong>Sport Online</strong><label>Giocato<input id="soG" inputmode="decimal"></label><label>Pagato<input id="soP" inputmode="decimal"></label></div>
+                    <div><strong>Virtual Online</strong><label>Giocato<input id="voG" inputmode="decimal"></label><label>Pagato<input id="voP" inputmode="decimal"></label></div>
+                    <div><strong>Casinò Online</strong><label>Giocato<input id="coG" inputmode="decimal"></label><label>Pagato<input id="coP" inputmode="decimal"></label></div>
+                    <div><strong>Poker Online</strong><label>Giocato<input id="poG" inputmode="decimal"></label><label>Pagato<input id="poP" inputmode="decimal"></label></div>
+                  </div>
+                </fieldset>
+
+                <fieldset class="entry-group">
+                  <legend>Conti gioco</legend>
+                  <label class="field-label">Conti aperti<input id="contiInput" type="number" min="0" step="1" placeholder="0"></label>
+                </fieldset>
+
+                <fieldset class="entry-group pdf-summary-group">
+                  <legend>Riepilogo PDF chiusura</legend>
+                  <div class="two-fields">
+                    <label>Totale Cassa Analitica<input id="pdfTotalInput" inputmode="decimal" placeholder="0,00"></label>
+                    <label>Verifica<input id="pdfCheckInput" readonly placeholder="Non verificato"></label>
+                  </div>
+                  <div id="pdfSavedDetail" class="pdf-detail-list"></div>
+                </fieldset>
+              </div>
+
+              <div class="save-row">
+                <button id="saveEntryBtn" class="primary-btn">Salva giornata su GitHub</button>
+                <button id="deleteEntryBtn" class="secondary-btn">Elimina giornata</button>
+                <span id="saveStatus"></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel pdf-import-panel">
+            <div class="panel-head"><div><h2>Importa PDF chiusura</h2><p>Carica la Cassa Analitica Planetwin365.</p></div></div>
+            <div class="pdf-import-body">
+              <label class="backup-file-label">Seleziona PDF
+                <input id="pdfFile" type="file" accept="application/pdf,.pdf">
+              </label>
+              <button id="importPdfBtn" class="primary-btn">Leggi PDF e compila</button>
+              <div id="pdfImportStatus" class="master-note">Il PDF compila Sport e Virtual. VLT, Online e Conti restano modificabili manualmente.</div>
+              <div id="pdfImportPreview"></div>
+              <div class="backup-warning"><strong>Controllo prima del salvataggio</strong><br>La Dashboard mostra i valori letti e verifica il totale della Cassa Analitica. Puoi correggere manualmente qualsiasi campo prima di salvare.</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section id="settingsView" class="view">
+      <div id="settingsLocked" class="master-lock panel">
+        <div class="lock-icon">⚙</div>
+        <div><span class="eyebrow">Area riservata</span><h2>Impostazioni</h2><p>Aliquote, token GitHub, backup e ripristino database.</p></div>
+        <div class="login-row"><input id="settingsPassword" type="password" placeholder="Password Master" autocomplete="current-password"><button id="settingsLoginBtn" class="primary-btn">Accedi</button></div>
+      </div>
+
+      <div id="settingsUnlocked" class="settings-area" hidden>
+        <div class="section-title"><div><span class="eyebrow">Configurazione</span><h2>Impostazioni</h2><p>Configurazione e manutenzione della Dashboard.</p></div><button id="settingsLogoutBtn" class="secondary-btn">Esci</button></div>
+
+        <section class="panel master-token settings-token">
+          <div class="panel-head"><div><h2>Token GitHub</h2><p>Autorizzazione per le operazioni di scrittura.</p></div><span id="settingsTokenStatus" class="pill">Token non impostato</span></div>
+          <div class="token-row"><input id="settingsGithubToken" type="password" placeholder="GitHub fine-grained token"><button id="settingsSaveTokenBtn" class="secondary-btn">Salva sul dispositivo</button><button id="settingsClearTokenBtn" class="ghost-btn">Rimuovi</button></div>
+          <p class="master-note settings-note">Il token resta esclusivamente nel browser di questo dispositivo.</p>
+        </section>
+
+        <div class="master-tools-grid">
+          <section class="panel settings-panel">
+            <div class="panel-head"><div><h2>Impostazioni aliquote</h2><p>Per ora partono dagli stessi valori della Dashboard Wincity e restano modificabili.</p></div></div>
+            <div class="settings-body">
+              <div class="rates-table">
+                <div class="rates-head"><span>Categoria</span><span>Aggio %</span><span>Aliquota fiscale %</span></div>
+                <div class="rate-row"><strong>Sport Agenzia</strong><input id="rateSpAggio" inputmode="decimal"><input id="rateSpTax" inputmode="decimal"></div>
+                <div class="rate-row"><strong>Virtual Agenzia</strong><input id="rateVtAggio" inputmode="decimal"><input id="rateVtTax" inputmode="decimal"></div>
+                <div class="rate-row"><strong>VLT</strong><input id="rateAwAggio" inputmode="decimal"><input id="rateAwTax" inputmode="decimal"></div>
+                <div class="rate-row"><strong>Sport Online</strong><input id="rateSoAggio" inputmode="decimal"><input id="rateSoTax" inputmode="decimal"></div>
+                <div class="rate-row"><strong>Virtual Online</strong><input id="rateVoAggio" inputmode="decimal"><input id="rateVoTax" inputmode="decimal"></div>
+                <div class="rate-row"><strong>Casinò Online</strong><input id="rateCoAggio" inputmode="decimal"><input id="rateCoTax" inputmode="decimal"></div>
+                <div class="rate-row"><strong>Poker Online</strong><input id="ratePoAggio" inputmode="decimal"><input id="ratePoTax" inputmode="decimal"></div>
+              </div>
+              <div class="settings-actions"><button id="saveRatesBtn" class="primary-btn">Salva aliquote su GitHub</button><span id="ratesStatus"></span></div>
+              <p class="master-note">La modifica ricalcola Dashboard e Storico usando le nuove percentuali.</p>
+            </div>
+          </section>
+
+          <section class="panel backup-panel">
+            <div class="panel-head"><div><h2>Backup database</h2><p>Esporta o ripristina l'intero database.</p></div></div>
+            <div class="backup-body">
+              <button id="exportBackupBtn" class="secondary-btn">Esporta backup JSON</button>
+              <label class="backup-file-label">Seleziona backup da importare<input id="importBackupFile" type="file" accept=".json,application/json"></label>
+              <button id="importBackupBtn" class="primary-btn">Importa backup</button>
+              <div id="backupStatus" class="master-note"></div>
+              <div class="backup-warning"><strong>Sicurezza ripristino</strong><br>Prima di importare, la Dashboard scarica automaticamente una copia del database attuale. Il ripristino richiede conferma e viene poi salvato su GitHub.</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="active" data-view="dashboard">⌂<span>Dashboard</span></button>
+    <button data-view="history">☰<span>Storico</span></button>
+    <button data-view="master">🔒<span>Master</span></button>
+    <button data-view="settings">⚙<span>Impostazioni</span></button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js?v=1"></script>
+</body>
+</html>
