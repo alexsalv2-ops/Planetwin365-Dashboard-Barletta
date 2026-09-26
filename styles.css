@@ -713,3 +713,100 @@ main{
   .kpi{padding:14px 10px !important;}
 }
 
+
+/* =========================================================
+   PLANETWIN365 BARLETTA — HEADER REWORK v3
+   Requested changes:
+   - remove white outer logo card
+   - keep logo only on the left
+   - center the title/subtitle
+   - remove "Barletta" from white main title
+   ========================================================= */
+
+.hero,
+.hero.planet-hero{
+  grid-template-columns:190px minmax(0,1fr) 54px !important;
+  align-items:center !important;
+  min-height:118px !important;
+  padding:16px max(22px,4vw) 18px !important;
+}
+
+.brand-logo.planet-logo,
+.planet-logo{
+  width:165px !important;
+  height:auto !important;
+  max-height:72px !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+  background:transparent !important;
+  padding:0 !important;
+  border-radius:0 !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+.hero-title{
+  text-align:center !important;
+  justify-self:center !important;
+  width:100% !important;
+}
+
+.hero h1{
+  font-size:33px !important;
+  margin:4px 0 6px !important;
+}
+
+.hero p{
+  text-align:center !important;
+}
+
+@media(max-width:900px){
+  .hero,
+  .hero.planet-hero{
+    grid-template-columns:150px minmax(0,1fr) 48px !important;
+  }
+
+  .planet-logo{
+    width:132px !important;
+    max-height:60px !important;
+  }
+
+  .hero h1{
+    font-size:27px !important;
+  }
+}
+
+@media(max-width:700px){
+  .hero,
+  .hero.planet-hero{
+    grid-template-columns:92px minmax(0,1fr) 36px !important;
+    gap:8px !important;
+    min-height:88px !important;
+    padding:10px 12px 12px !important;
+  }
+
+  .planet-logo{
+    width:84px !important;
+    max-height:42px !important;
+  }
+
+  .hero-title{
+    text-align:center !important;
+  }
+
+  .hero h1{
+    font-size:20px !important;
+    margin:1px 0 3px !important;
+  }
+
+  .hero p{
+    display:block !important;
+    font-size:11px !important;
+    line-height:1.25 !important;
+  }
+
+  .hero .eyebrow{
+    font-size:6.5px !important;
+  }
+}
+
