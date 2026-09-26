@@ -162,18 +162,102 @@ function renderRecent(records){
   }).join('')}</div>`:'<p class="empty-state">Nessun dato nel periodo selezionato.</p>';
 }
 function drawChart(records){
-  const canvas=$('#trendChart'),ctx=canvas.getContext('2d');
-  const box=canvas.getBoundingClientRect(),dpr=Math.max(1,window.devicePixelRatio||1);canvas.width=Math.max(600,Math.floor(box.width*dpr));canvas.height=Math.max(300,Math.floor(box.height*dpr));ctx.scale(dpr,dpr);
-  const w=canvas.width/dpr,h=canvas.height/dpr;ctx.clearRect(0,0,w,h);
-  const byDay={};for(const r of records){const d=Number(r.data.slice(-2)),a=aggregate([r]),t=agencyTotal(a);byDay[d]={g:t.g,p:t.p,n:t.netto}}
-  const pts=Object.entries(byDay).map(([d,v])=>({d:Number(d),...v})).sort((a,b)=>a.d-b.d);
-  if(!pts.length){ctx.fillStyle='#7b8792';ctx.font='14px sans-serif';ctx.fillText('Nessun dato disponibile',20,30);return}
-  const max=Math.max(1,...pts.flatMap(x=>[Math.abs(x.g),Math.abs(x.p),Math.abs(x.n)])),pad={l:64,r:20,t:20,b:40},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
-  ctx.font='11px sans-serif';ctx.strokeStyle='#e1e6ea';ctx.fillStyle='#73808d';ctx.lineWidth=1;
-  for(let i=0;i<=5;i++){const y=pad.t+ch*i/5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(Math.round(max*(1-i/5)).toLocaleString('it-IT'),8,y+4)}
-  const lines=[['g','#f5c400'],['p','#68737e'],['n','#12a05a']];
-  for(const [key,color] of lines){ctx.strokeStyle=color;ctx.lineWidth=3;ctx.beginPath();pts.forEach((x,i)=>{const px=pad.l+(x.d-1)/30*cw,py=pad.t+ch-(x[key]/max)*ch;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();ctx.fillStyle=color;pts.forEach(x=>{const px=pad.l+(x.d-1)/30*cw,py=pad.t+ch-(x[key]/max)*ch;ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill()})}
-  ctx.fillStyle='#73808d';for(let d=1;d<=31;d+=2)ctx.fillText(String(d),pad.l+(d-1)/30*cw-4,h-18);
+  const canvas=$('#trendChart');
+  const ctx=canvas.getContext('2d');
+
+  const host=canvas.parentElement;
+  const rect=host.getBoundingClientRect();
+  const cssW=Math.max(600,Math.round(rect.width));
+  const cssH=Math.max(300,Math.round(rect.height));
+  const dpr=Math.min(3,Math.max(2,window.devicePixelRatio||1));
+
+  canvas.style.width=cssW+'px';
+  canvas.style.height=cssH+'px';
+  canvas.width=Math.round(cssW*dpr);
+  canvas.height=Math.round(cssH*dpr);
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+
+  const w=cssW,h=cssH;
+  const byDay={};
+  for(const r of records){
+    const d=Number(r.data.slice(-2)),a=aggregate([r]),t=agencyTotal(a);
+    byDay[d]={g:t.g,p:t.p,n:t.netto};
+  }
+  const pts=Object.entries(byDay)
+    .map(([d,v])=>({d:Number(d),...v}))
+    .sort((a,b)=>a.d-b.d);
+
+  if(!pts.length){
+    ctx.fillStyle='#6d7885';
+    ctx.font='600 13px Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+    ctx.textBaseline='middle';
+    ctx.fillText('Nessun dato disponibile',22,32);
+    return;
+  }
+
+  const max=Math.max(1,...pts.flatMap(x=>[Math.abs(x.g),Math.abs(x.p),Math.abs(x.n)]));
+  const pad={l:78,r:24,t:24,b:44};
+  const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+
+  ctx.font='600 12px Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.textBaseline='middle';
+  ctx.fillStyle='#7b8794';
+  ctx.strokeStyle='#e3e8ec';
+  ctx.lineWidth=1;
+
+  for(let i=0;i<=5;i++){
+    const y=Math.round(pad.t+ch*i/5)+0.5;
+    ctx.beginPath();
+    ctx.moveTo(pad.l,y);
+    ctx.lineTo(w-pad.r,y);
+    ctx.stroke();
+    const label=Math.round(max*(1-i/5)).toLocaleString('it-IT');
+    ctx.fillText(label,12,Math.round(y));
+  }
+
+  const lines=[
+    ['g','#f2bd00'],
+    ['p','#66727d'],
+    ['n','#18a765']
+  ];
+
+  for(const [key,color] of lines){
+    ctx.strokeStyle=color;
+    ctx.lineWidth=3;
+    ctx.lineJoin='round';
+    ctx.lineCap='round';
+    ctx.beginPath();
+    pts.forEach((x,i)=>{
+      const px=pad.l+(x.d-1)/30*cw;
+      const py=pad.t+ch-(x[key]/max)*ch;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle=color;
+    pts.forEach(x=>{
+      const px=pad.l+(x.d-1)/30*cw;
+      const py=pad.t+ch-(x[key]/max)*ch;
+      ctx.beginPath();
+      ctx.arc(px,py,4.5,0,Math.PI*2);
+      ctx.fill();
+      ctx.lineWidth=2;
+      ctx.strokeStyle='#ffffff';
+      ctx.stroke();
+    });
+  }
+
+  ctx.fillStyle='#7b8794';
+  ctx.font='600 12px Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.textBaseline='alphabetic';
+  for(let d=1;d<=31;d+=2){
+    const x=Math.round(pad.l+(d-1)/30*cw);
+    ctx.fillText(String(d),x-4,h-16);
+  }
 }
 function renderHistory(){
   const month=$('#historyMonth').value||currentMonth;
@@ -194,7 +278,7 @@ function switchView(view){
 const MASTER_PASSWORD='PlanetMaster';
 const TOKEN_KEY='planetwin365_barletta_gh_token';
 const MASTER_SESSION_KEY='planetwin365_barletta_master';
-const GH_REPO='alexsalv2-ops/Planetwin365-Dashboard-Barletta';
+const GH_REPO='alexsalv2-ops/Planetwin365-Dashboard-Barletta-private';
 const GH_FILE='data.json';
 let githubTokenMemory='';
 
@@ -244,14 +328,14 @@ function loadDayToForm(){
 function decodeGithubContent(content){const clean=String(content||'').replace(/\s/g,'');return JSON.parse(decodeURIComponent(escape(atob(clean))))}
 async function fetchLatestGithubDb(requireToken=true){
   const token=getGithubToken();if(requireToken&&!token)throw new Error('Token GitHub non disponibile. Apri Impostazioni e salvalo sul dispositivo.');
-  const headers={'Accept':'application/vnd.github+json'};if(token)headers.Authorization=`Bearer ${token}`;
+  const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};if(token)headers.Authorization=`Bearer ${token}`;
   const res=await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}?ref=main&ts=${Date.now()}`,{headers,cache:'no-store'});
   if(!res.ok)throw new Error(`GitHub: ${res.status} ${res.statusText}`);const meta=await res.json();return {db:decodeGithubContent(meta.content),sha:meta.sha};
 }
 function encodeGithubJson(obj){return btoa(unescape(encodeURIComponent(JSON.stringify(obj,null,2))))}
 async function putGithubDb(next,sha,message){
   const token=getGithubToken();if(!token)throw new Error('Token GitHub non disponibile.');
-  const res=await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`,{method:'PUT',headers:{'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({message,content:encodeGithubJson(next),sha})});
+  const res=await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`,{method:'PUT',headers:{'Accept':'application/vnd.github+json','Authorization':`Bearer ${token}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:JSON.stringify({message,content:encodeGithubJson(next),sha})});
   if(!res.ok){let msg='';try{msg=(await res.json()).message||''}catch{}throw new Error(`GitHub: ${res.status} ${msg}`)}
 }
 async function saveEntry(){
@@ -331,11 +415,41 @@ async function importBackup(){
 }
 
 async function loadData(){
-  let loaded=null;
-  try{loaded=(await fetchLatestGithubDb(false)).db}catch(e){
-    const res=await fetch('./data.json?ts='+Date.now(),{cache:'no-store'});if(!res.ok)throw new Error('Impossibile caricare data.json');loaded=await res.json();
+  const token=getGithubToken();
+  let privateDataLocked=false;
+
+  if(token){
+    try{
+      db=(await fetchLatestGithubDb(true)).db;
+    }catch(e){
+      db={records:[],settings:{}};
+      privateDataLocked=true;
+      console.error(e);
+    }
+  }else{
+    db={records:[],settings:{}};
+    privateDataLocked=true;
   }
-  db=loaded||{records:[],settings:{}};db.records=Array.isArray(db.records)?db.records:[];db.settings=db.settings||{};db.records.sort((a,b)=>a.data.localeCompare(b.data));currentMonth=db.records.length?db.records.at(-1).data.slice(0,7):new Date().toISOString().slice(0,7);$('#historyMonth').value=currentMonth;renderPeriodExtra();renderDashboard();renderMasterState();renderSettingsState();
+
+  db=db||{records:[],settings:{}};
+  db.records=Array.isArray(db.records)?db.records:[];
+  db.settings=db.settings||{};
+  db.records.sort((a,b)=>a.data.localeCompare(b.data));
+  currentMonth=db.records.length?db.records.at(-1).data.slice(0,7):new Date().toISOString().slice(0,7);
+  $('#historyMonth').value=currentMonth;
+  renderPeriodExtra();
+  renderDashboard();
+  renderMasterState();
+  renderSettingsState();
+
+  if(privateDataLocked){
+    const t=$('#toast');
+    if(t){
+      t.textContent='Database privato: configura il token GitHub in Impostazioni per visualizzare i dati.';
+      t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'),6500);
+    }
+  }
 }
 
 /* ===== EVENTI ===== */
