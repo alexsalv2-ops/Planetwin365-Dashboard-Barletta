@@ -810,3 +810,50 @@ main{
   }
 }
 
+
+/* =========================================================
+   PLANETWIN365 BARLETTA — LOGO BOOST v4
+   - improved logo file
+   - larger logo in header
+   ========================================================= */
+
+.hero,
+.hero.planet-hero{
+  grid-template-columns:220px minmax(0,1fr) 54px !important;
+}
+
+.brand-logo.planet-logo,
+.planet-logo{
+  width:198px !important;
+  max-width:198px !important;
+  max-height:86px !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+}
+
+@media(max-width:900px){
+  .hero,
+  .hero.planet-hero{
+    grid-template-columns:175px minmax(0,1fr) 48px !important;
+  }
+
+  .planet-logo{
+    width:154px !important;
+    max-width:154px !important;
+    max-height:72px !important;
+  }
+}
+
+@media(max-width:700px){
+  .hero,
+  .hero.planet-hero{
+    grid-template-columns:102px minmax(0,1fr) 36px !important;
+  }
+
+  .planet-logo{
+    width:96px !important;
+    max-width:96px !important;
+    max-height:50px !important;
+  }
+}
+
