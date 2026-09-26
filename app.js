@@ -225,11 +225,11 @@ function recordFromForm(){
   const date=$('#entryDate').value;if(!date)throw new Error('Seleziona una data.');
   const spRaw={venduto:val('spEmessi'),annullato:val('spAnnulli'),pagato:val('spPagati'),rimborsato:val('spRimborsati')};
   const vtRaw={venduto:val('vtEmessi'),annullato:val('vtAnnulli'),pagato:val('vtPagati'),rimborsato:val('vtRimborsati')};
-  return {data:date,'sp-g':spRaw.venduto-spRaw.annullato,'sp-p':spRaw.pagato+spRaw.rimborsato,'vt-g':vtRaw.venduto-vtRaw.annullato,'vt-p':vtRaw.pagato+vtRaw.rimborsato,'aw-g':val('awG'),'aw-p':val('awP'),'so-g':val('soG'),'so-p':val('soP'),'vo-g':val('voG'),'vo-p':val('voP'),'co-g':val('coG'),'co-p':val('coP'),'po-g':val('poG'),'po-p':val('poP'),conti:Math.max(0,Math.round(val('contiInput'))),cassaAnaliticaTotale:optionalVal('pdfTotalInput'),planetRaw:{sport:spRaw,virtual:vtRaw},planetPdf:currentPdfImport?JSON.parse(JSON.stringify(currentPdfImport)):null,aggiornato:new Date().toISOString()};
+  return {data:date,'sp-g':spRaw.venduto-spRaw.annullato,'sp-p':spRaw.pagato+spRaw.rimborsato,'vt-g':vtRaw.venduto-vtRaw.annullato,'vt-p':vtRaw.pagato+vtRaw.rimborsato,'aw-g':val('awG'),'aw-p':val('awP'),'so-g':val('soG'),'so-p':val('soP'),'vo-g':val('voG'),'vo-p':val('voP'),'co-g':val('coG'),'co-p':val('coP'),'po-g':val('poG'),'po-p':val('poP'),conti:Math.max(0,Math.round(val('contiInput'))),cassaContata:optionalVal('cassaContataInput'),cassaAnaliticaTotale:optionalVal('pdfTotalInput'),planetRaw:{sport:spRaw,virtual:vtRaw},planetPdf:currentPdfImport?JSON.parse(JSON.stringify(currentPdfImport)):null,aggiornato:new Date().toISOString()};
 }
 function clearEntry(){
   ['spEmessi','spAnnulli','spPagati','spRimborsati','vtEmessi','vtAnnulli','vtPagati','vtRimborsati','awG','awP','soG','soP','voG','voP','coG','coP','poG','poP'].forEach(id=>setVal(id,0));
-  $('#contiInput').value='0';setOptionalVal('pdfTotalInput',null);$('#pdfCheckInput').value='Non verificato';currentPdfImport=null;updateRawPreview();renderPdfSavedDetail();
+  $('#contiInput').value='0';setOptionalVal('cassaContataInput',null);setOptionalVal('pdfTotalInput',null);$('#pdfCheckInput').value='Non verificato';currentPdfImport=null;updateRawPreview();renderPdfSavedDetail();
 }
 function loadDayToForm(){
   const date=$('#entryDate').value,r=db.records.find(x=>x.data===date);
@@ -239,7 +239,7 @@ function loadDayToForm(){
   setVal('spEmessi',sr.venduto);setVal('spAnnulli',sr.annullato);setVal('spPagati',sr.pagato);setVal('spRimborsati',sr.rimborsato);
   setVal('vtEmessi',vr.venduto);setVal('vtAnnulli',vr.annullato);setVal('vtPagati',vr.pagato);setVal('vtRimborsati',vr.rimborsato);
   [['awG','aw-g'],['awP','aw-p'],['soG','so-g'],['soP','so-p'],['voG','vo-g'],['voP','vo-p'],['coG','co-g'],['coP','co-p'],['poG','po-g'],['poP','po-p']].forEach(([id,k])=>setVal(id,r[k]));
-  $('#contiInput').value=Math.max(0,Math.round(num(r.conti)));setOptionalVal('pdfTotalInput',r.cassaAnaliticaTotale);currentPdfImport=r.planetPdf||null;updatePdfCheckFromImport();updateRawPreview();renderPdfSavedDetail();$('#saveStatus').textContent='Giornata caricata. Le modifiche sovrascriveranno questa data.';
+  $('#contiInput').value=Math.max(0,Math.round(num(r.conti)));setOptionalVal('cassaContataInput',r.cassaContata);setOptionalVal('pdfTotalInput',r.cassaAnaliticaTotale);currentPdfImport=r.planetPdf||null;updatePdfCheckFromImport();updateRawPreview();renderPdfSavedDetail();$('#saveStatus').textContent='Giornata caricata. Le modifiche sovrascriveranno questa data.';
 }
 function decodeGithubContent(content){const clean=String(content||'').replace(/\s/g,'');return JSON.parse(decodeURIComponent(escape(atob(clean))))}
 async function fetchLatestGithubDb(requireToken=true){
