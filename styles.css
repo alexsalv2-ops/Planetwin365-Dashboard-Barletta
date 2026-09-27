@@ -857,3 +857,69 @@ main{
   }
 }
 
+/* =========================================================
+   PLANETWIN365 BARLETTA — UTILE SPORT v7
+   ========================================================= */
+.kpi-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+}
+
+.kpi.sport-profit{
+  border-top-color:#159b59 !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(210,248,227,.9), transparent 55%),
+    linear-gradient(145deg,#ffffff,#f1f8f4) !important;
+}
+
+.kpi.sport-profit::after{
+  background:linear-gradient(90deg,transparent,rgba(21,155,89,.28),transparent) !important;
+}
+
+.utile-preview{
+  padding:5px 10px;
+  border-radius:999px;
+  background:#eaf8f0;
+  border:1px solid #bfe5cf;
+}
+
+.utile-preview b{
+  color:#0b8b50 !important;
+}
+
+.pdf-preview-grid .pdf-utile-tile{
+  grid-column:1/-1;
+  border-color:#b9dfc8 !important;
+  background:linear-gradient(145deg,#f7fff9,#e9f8ef) !important;
+}
+
+.pdf-preview-grid .pdf-utile-tile b{
+  font-size:18px;
+}
+
+.pdf-detail-list .pdf-utile-row{
+  border:1px solid #bfe1cd;
+  border-radius:10px;
+  padding:9px 10px;
+  background:linear-gradient(145deg,#f8fff9,#ebf8f0);
+}
+
+.history-summary{
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+}
+
+@media(max-width:1200px){
+  .kpi-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  }
+  .history-summary{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  }
+}
+
+@media(max-width:900px){
+  .kpi-grid,
+  .history-summary{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
