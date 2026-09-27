@@ -936,3 +936,34 @@ main{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   }
 }
+
+
+/* =========================================================
+   PLANETWIN365 BARLETTA — KPI CONTABILI v10
+   ========================================================= */
+.kpi-grid{
+  grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+}
+
+.kpi.sport-share{
+  border-top-color:#0b7d49 !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(195,239,216,.92), transparent 55%),
+    linear-gradient(145deg,#ffffff,#edf7f1) !important;
+}
+
+.kpi.sport-share::after{
+  background:linear-gradient(90deg,transparent,rgba(11,125,73,.34),transparent) !important;
+}
+
+@media(max-width:1250px){
+  .kpi-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  }
+}
+
+@media(max-width:700px){
+  .kpi-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
