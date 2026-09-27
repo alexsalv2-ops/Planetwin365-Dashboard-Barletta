@@ -137,17 +137,21 @@ function shiftPeriod(delta){
 function kv(c,played='Giocato'){
   return `<div class="kv"><div><span>${played}</span><b>${eur(c.g)}</b></div><div><span>Pagato</span><b>${eur(c.p)}</b></div><div><span>Lordo</span><b class="${tone(c.lordo,'lordo')}">${eur(c.lordo)}</b></div><div><span>Netto</span><b class="${tone(c.netto,'netto')}">${eur(c.netto)}</b></div></div>`;
 }
+function kvSport(c){
+  return `<div class="kv"><div><span>Giocato</span><b>${eur(c.g)}</b></div><div><span>Pagato</span><b>${eur(c.p)}</b></div><div><span>Utile</span><b class="${tone(c.lordo,'netto')}">${eur(c.lordo)}</b></div><div><span>Netto</span><b class="${tone(c.netto,'netto')}">${eur(c.netto)}</b></div></div>`;
+}
 function renderDashboard(){
-  const p=getPeriod(),a=aggregate(p.records),agency=agencyTotal(a),online=onlineTotal(a);
+  const p=getPeriod(),a=aggregate(p.records),agency=agencyTotal(a),online=onlineTotal(a),utileSport=a.cats.sp.lordo;
   $('#periodKind').textContent=p.type==='all'?'ARCHIVIO COMPLETO':'PERIODO IN VISTA';
   $('#periodTitle').textContent=p.label;
   $('#dayCount').textContent=`${p.records.length} ${p.records.length===1?'giorno':'giorni'}`;
   $('#kpiGrid').innerHTML=`
     <article class="kpi"><span>TOTALE GIOCATO</span><strong>${eur(agency.g)}</strong><small>Sport + Virtual Agenzia</small></article>
     <article class="kpi"><span>TOTALE PAGATO</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia</small></article>
+    <article class="kpi sport-profit"><span>UTILE SPORT</span><strong class="${tone(utileSport,'netto')}">${eur(utileSport)}</strong><small>Sport giocato − Sport pagato</small></article>
     <article class="kpi orange"><span>LORDO</span><strong class="${tone(agency.lordo,'lordo')}">${eur(agency.lordo)}</strong><small>Giocato − Pagato</small></article>
     <article class="kpi green"><span>NETTO</span><strong class="${tone(agency.netto,'netto')}">${eur(agency.netto)}</strong><small>Dopo aggio e aliquote</small></article>`;
-  $('#sportDetail').innerHTML=kv(a.cats.sp);
+  $('#sportDetail').innerHTML=kvSport(a.cats.sp);
   $('#virtualDetail').innerHTML=kv(a.cats.vt);
   $('#vltDetail').innerHTML=kv(a.cats.aw,'Incassati');
   $('#onlineDetail').innerHTML=kv(online);
@@ -263,9 +267,9 @@ function renderHistory(){
   const month=$('#historyMonth').value||currentMonth;
   const rs=[...db.records].filter(r=>r.data.startsWith(month)).sort((a,b)=>b.data.localeCompare(a.data));
   const total=aggregate(rs);
-  $('#historyList').innerHTML=`<div class="history-summary"><div><span>Periodo</span><strong>${monthLabel(month)}</strong></div><div><span>Giornate</span><strong>${rs.length}</strong></div><div><span>Sport · Giocato</span><strong>${eur(total.cats.sp.g)}</strong></div><div><span>Virtual · Giocato</span><strong>${eur(total.cats.vt.g)}</strong></div></div>`+rs.map(r=>{
+  $('#historyList').innerHTML=`<div class="history-summary"><div><span>Periodo</span><strong>${monthLabel(month)}</strong></div><div><span>Giornate</span><strong>${rs.length}</strong></div><div><span>Sport · Giocato</span><strong>${eur(total.cats.sp.g)}</strong></div><div><span>Sport · Utile</span><strong class="${tone(total.cats.sp.lordo,'netto')}">${eur(total.cats.sp.lordo)}</strong></div><div><span>Virtual · Giocato</span><strong>${eur(total.cats.vt.g)}</strong></div></div>`+rs.map(r=>{
     const a=aggregate([r]),on=onlineTotal(a),pdf=num(r.cassaAnaliticaTotale);
-    return `<article class="history-card"><div class="history-head"><strong>${dmy(r.data)}</strong><span>${num(r.conti)} conti aperti${r.cassaAnaliticaTotale!==null&&r.cassaAnaliticaTotale!==undefined?` · Cassa ${eur(pdf)}`:''}</span></div><div class="history-grid"><div class="history-voice"><h4>Sport Agenzia</h4>${kv(a.cats.sp)}</div><div class="history-voice"><h4>Virtual Agenzia</h4>${kv(a.cats.vt)}</div><div class="history-voice"><h4>VLT</h4>${kv(a.cats.aw,'Incassati')}</div><div class="history-voice"><h4>Online</h4>${kv(on)}</div></div></article>`;
+    return `<article class="history-card"><div class="history-head"><strong>${dmy(r.data)}</strong><span>${num(r.conti)} conti aperti${r.cassaAnaliticaTotale!==null&&r.cassaAnaliticaTotale!==undefined?` · Cassa ${eur(pdf)}`:''}</span></div><div class="history-grid"><div class="history-voice"><h4>Sport Agenzia</h4>${kvSport(a.cats.sp)}</div><div class="history-voice"><h4>Virtual Agenzia</h4>${kv(a.cats.vt)}</div><div class="history-voice"><h4>VLT</h4>${kv(a.cats.aw,'Incassati')}</div><div class="history-voice"><h4>Online</h4>${kv(on)}</div></div></article>`;
   }).join('');
 }
 function switchView(view){
@@ -303,13 +307,14 @@ function optionalVal(id){const raw=String($('#'+id)?.value??'').trim();return ra
 function setOptionalVal(id,v){const el=$('#'+id);if(el)el.value=(v===null||v===undefined||v==='')?'':Number(v).toFixed(2).replace('.',',')}
 function updateRawPreview(){
   const spG=val('spEmessi')-val('spAnnulli'),spP=val('spPagati')+val('spRimborsati'),vtG=val('vtEmessi')-val('vtAnnulli'),vtP=val('vtPagati')+val('vtRimborsati');
-  $('#spNetPlayed').textContent=eur(spG);$('#spNetPaid').textContent=eur(spP);$('#vtNetPlayed').textContent=eur(vtG);$('#vtNetPaid').textContent=eur(vtP);
+  $('#spNetPlayed').textContent=eur(spG);$('#spNetPaid').textContent=eur(spP);if($('#spUtile'))$('#spUtile').textContent=eur(spG-spP);$('#vtNetPlayed').textContent=eur(vtG);$('#vtNetPaid').textContent=eur(vtP);
 }
 function recordFromForm(){
   const date=$('#entryDate').value;if(!date)throw new Error('Seleziona una data.');
   const spRaw={venduto:val('spEmessi'),annullato:val('spAnnulli'),pagato:val('spPagati'),rimborsato:val('spRimborsati')};
   const vtRaw={venduto:val('vtEmessi'),annullato:val('vtAnnulli'),pagato:val('vtPagati'),rimborsato:val('vtRimborsati')};
-  return {data:date,'sp-g':spRaw.venduto-spRaw.annullato,'sp-p':spRaw.pagato+spRaw.rimborsato,'vt-g':vtRaw.venduto-vtRaw.annullato,'vt-p':vtRaw.pagato+vtRaw.rimborsato,'aw-g':val('awG'),'aw-p':val('awP'),'so-g':val('soG'),'so-p':val('soP'),'vo-g':val('voG'),'vo-p':val('voP'),'co-g':val('coG'),'co-p':val('coP'),'po-g':val('poG'),'po-p':val('poP'),conti:Math.max(0,Math.round(val('contiInput'))),cassaContata:optionalVal('cassaContataInput'),cassaAnaliticaTotale:optionalVal('pdfTotalInput'),planetRaw:{sport:spRaw,virtual:vtRaw},planetPdf:currentPdfImport?JSON.parse(JSON.stringify(currentPdfImport)):null,aggiornato:new Date().toISOString()};
+  const spG=spRaw.venduto-spRaw.annullato,spP=spRaw.pagato+spRaw.rimborsato;
+  return {data:date,'sp-g':spG,'sp-p':spP,utileSport:spG-spP,'vt-g':vtRaw.venduto-vtRaw.annullato,'vt-p':vtRaw.pagato+vtRaw.rimborsato,'aw-g':val('awG'),'aw-p':val('awP'),'so-g':val('soG'),'so-p':val('soP'),'vo-g':val('voG'),'vo-p':val('voP'),'co-g':val('coG'),'co-p':val('coP'),'po-g':val('poG'),'po-p':val('poP'),conti:Math.max(0,Math.round(val('contiInput'))),cassaContata:optionalVal('cassaContataInput'),cassaAnaliticaTotale:optionalVal('pdfTotalInput'),planetRaw:{sport:spRaw,virtual:vtRaw},planetPdf:currentPdfImport?JSON.parse(JSON.stringify(currentPdfImport)):null,aggiornato:new Date().toISOString()};
 }
 function clearEntry(){
   ['spEmessi','spAnnulli','spPagati','spRimborsati','vtEmessi','vtAnnulli','vtPagati','vtRimborsati','awG','awP','soG','soP','voG','voP','coG','coP','poG','poP'].forEach(id=>setVal(id,0));
@@ -372,7 +377,10 @@ function parsePlanetPdfText(rawText,fileName=''){
   const totals={venduto:parsePdfTotalRow(text,'Venduto'),annullato:parsePdfTotalRow(text,'Annullato'),pagato:parsePdfTotalRow(text,'Pagato'),rimborsato:parsePdfTotalRow(text,'Rimborsato')};
   const topMatch=text.match(/(?:^|\s)Totale\s+(-?[\d.]+,\d{2})\s*€/i),cassaTotale=topMatch?moneyFromPdf(topMatch[1]):null;
   const calcTotal=[totals.venduto,totals.annullato,totals.pagato,totals.rimborsato].every(v=>v!==null)?totals.venduto+totals.annullato+totals.pagato+totals.rimborsato:null;
-  return {fileName,date:from,from,to,sport:{venduto:Math.abs(sport.venduto.value),annullato:Math.abs(sport.annullato.value),pagato:Math.abs(sport.pagato.value),rimborsato:Math.abs(sport.rimborsato.value)},virtual:{venduto:sumVirtual('venduto'),annullato:sumVirtual('annullato'),pagato:sumVirtual('pagato'),rimborsato:sumVirtual('rimborsato')},virtualRows,totals,cassaTotale,calcTotal,difference:cassaTotale!==null&&calcTotal!==null?calcTotal-cassaTotale:null};
+  const sportNormalized={venduto:Math.abs(sport.venduto.value),annullato:Math.abs(sport.annullato.value),pagato:Math.abs(sport.pagato.value),rimborsato:Math.abs(sport.rimborsato.value)};
+  const virtualNormalized={venduto:sumVirtual('venduto'),annullato:sumVirtual('annullato'),pagato:sumVirtual('pagato'),rimborsato:sumVirtual('rimborsato')};
+  const utileSport=(sportNormalized.venduto-sportNormalized.annullato)-(sportNormalized.pagato+sportNormalized.rimborsato);
+  return {fileName,date:from,from,to,sport:sportNormalized,virtual:virtualNormalized,utileSport,virtualRows,totals,cassaTotale,calcTotal,difference:cassaTotale!==null&&calcTotal!==null?calcTotal-cassaTotale:null};
 }
 async function extractPdfText(file){
   if(typeof pdfjsLib==='undefined')throw new Error('Libreria PDF non disponibile. Controlla la connessione Internet e ricarica la pagina.');
@@ -388,11 +396,13 @@ function updatePdfCheckFromImport(){
 function renderPdfSavedDetail(){
   const host=$('#pdfSavedDetail');if(!host)return;if(!currentPdfImport){host.innerHTML='';return}
   const rows=VIRTUAL_LABELS.map(l=>{const r=currentPdfImport.virtualRows?.[l];return r?`<div><strong>${l}</strong><span>Venduto ${eur(Math.abs(r.venduto.value))} · Annullato ${eur(Math.abs(r.annullato.value))} · Pagato ${eur(Math.abs(r.pagato.value))}</span></div>`:''}).join('');
-  host.innerHTML=`<div><strong>PDF</strong><span>${currentPdfImport.fileName||'Cassa Analitica'} · ${dmy(currentPdfImport.date)}</span></div>${rows}`;
+  const utileSport=currentPdfImport.utileSport!==undefined?num(currentPdfImport.utileSport):(num(currentPdfImport.sport?.venduto)-num(currentPdfImport.sport?.annullato))-(num(currentPdfImport.sport?.pagato)+num(currentPdfImport.sport?.rimborsato));
+  host.innerHTML=`<div><strong>PDF</strong><span>${currentPdfImport.fileName||'Cassa Analitica'} · ${dmy(currentPdfImport.date)}</span></div><div class="pdf-utile-row"><strong>Utile Sport</strong><span class="${tone(utileSport,'netto')}">${eur(utileSport)}</span></div>${rows}`;
 }
 function renderPdfPreview(p){
   const status=Math.abs(p.difference||0)<0.011?'✓ Chiusura quadrata':p.difference===null?'Totale non verificabile':`⚠ Differenza ${eur(p.difference)}`;
-  $('#pdfImportPreview').innerHTML=`<div class="pdf-preview-card"><div class="pdf-preview-head"><strong>${dmy(p.date)}</strong><span class="${status.startsWith('✓')?'pdf-ok-text':'pdf-warn-text'}">${status}</span></div><div class="pdf-preview-grid"><div><span>Sport venduto</span><b>${eur(p.sport.venduto)}</b></div><div><span>Sport annullato</span><b>${eur(p.sport.annullato)}</b></div><div><span>Sport pagato</span><b>${eur(p.sport.pagato)}</b></div><div><span>Virtual venduto</span><b>${eur(p.virtual.venduto)}</b></div><div><span>Virtual annullato</span><b>${eur(p.virtual.annullato)}</b></div><div><span>Virtual pagato</span><b>${eur(p.virtual.pagato)}</b></div><div><span>Totale report</span><b>${p.cassaTotale===null?'—':eur(p.cassaTotale)}</b></div><div><span>Totale ricalcolato</span><b>${p.calcTotal===null?'—':eur(p.calcTotal)}</b></div></div></div>`;
+  const utileSport=p.utileSport!==undefined?num(p.utileSport):(num(p.sport?.venduto)-num(p.sport?.annullato))-(num(p.sport?.pagato)+num(p.sport?.rimborsato));
+  $('#pdfImportPreview').innerHTML=`<div class="pdf-preview-card"><div class="pdf-preview-head"><strong>${dmy(p.date)}</strong><span class="${status.startsWith('✓')?'pdf-ok-text':'pdf-warn-text'}">${status}</span></div><div class="pdf-preview-grid"><div class="pdf-utile-tile"><span>Utile Sport</span><b class="${tone(utileSport,'netto')}">${eur(utileSport)}</b></div><div><span>Sport venduto</span><b>${eur(p.sport.venduto)}</b></div><div><span>Sport annullato</span><b>${eur(p.sport.annullato)}</b></div><div><span>Sport pagato</span><b>${eur(p.sport.pagato)}</b></div><div><span>Virtual venduto</span><b>${eur(p.virtual.venduto)}</b></div><div><span>Virtual annullato</span><b>${eur(p.virtual.annullato)}</b></div><div><span>Virtual pagato</span><b>${eur(p.virtual.pagato)}</b></div><div><span>Totale report</span><b>${p.cassaTotale===null?'—':eur(p.cassaTotale)}</b></div><div><span>Totale ricalcolato</span><b>${p.calcTotal===null?'—':eur(p.calcTotal)}</b></div></div></div>`;
 }
 async function importPdf(){
   const file=$('#pdfFile').files?.[0];if(!file){$('#pdfImportStatus').textContent='Seleziona prima il PDF di chiusura.';return}
