@@ -137,21 +137,25 @@ function shiftPeriod(delta){
 function kv(c,played='Giocato'){
   return `<div class="kv"><div><span>${played}</span><b>${eur(c.g)}</b></div><div><span>Pagato</span><b>${eur(c.p)}</b></div><div><span>Lordo</span><b class="${tone(c.lordo,'lordo')}">${eur(c.lordo)}</b></div><div><span>Netto</span><b class="${tone(c.netto,'netto')}">${eur(c.netto)}</b></div></div>`;
 }
-function kvSport(c){
-  return `<div class="kv"><div><span>Giocato</span><b>${eur(c.g)}</b></div><div><span>Pagato</span><b>${eur(c.p)}</b></div><div><span>Utile</span><b class="${tone(c.lordo,'netto')}">${eur(c.lordo)}</b></div><div><span>Netto</span><b class="${tone(c.netto,'netto')}">${eur(c.netto)}</b></div></div>`;
+function currentMonthSportUtile(){
+  const today=new Date();
+  const month=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const todayIso=isoLocal(today);
+  return db.records
+    .filter(r=>r.data.startsWith(month) && r.data<=todayIso)
+    .reduce((sum,r)=>sum + num(r['sp-g']) - num(r['sp-p']),0);
 }
 function renderDashboard(){
-  const p=getPeriod(),a=aggregate(p.records),agency=agencyTotal(a),online=onlineTotal(a),utileSport=a.cats.sp.lordo;
+  const p=getPeriod(),a=aggregate(p.records),agency=agencyTotal(a),online=onlineTotal(a),utileMese=currentMonthSportUtile();
   $('#periodKind').textContent=p.type==='all'?'ARCHIVIO COMPLETO':'PERIODO IN VISTA';
   $('#periodTitle').textContent=p.label;
   $('#dayCount').textContent=`${p.records.length} ${p.records.length===1?'giorno':'giorni'}`;
   $('#kpiGrid').innerHTML=`
     <article class="kpi"><span>TOTALE GIOCATO</span><strong>${eur(agency.g)}</strong><small>Sport + Virtual Agenzia</small></article>
     <article class="kpi"><span>TOTALE PAGATO</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia</small></article>
-    <article class="kpi sport-profit"><span>UTILE SPORT</span><strong class="${tone(utileSport,'netto')}">${eur(utileSport)}</strong><small>Sport giocato − Sport pagato</small></article>
     <article class="kpi orange"><span>LORDO</span><strong class="${tone(agency.lordo,'lordo')}">${eur(agency.lordo)}</strong><small>Giocato − Pagato</small></article>
-    <article class="kpi green"><span>NETTO</span><strong class="${tone(agency.netto,'netto')}">${eur(agency.netto)}</strong><small>Dopo aggio e aliquote</small></article>`;
-  $('#sportDetail').innerHTML=kvSport(a.cats.sp);
+    <article class="kpi sport-profit"><span>UTILE SPORT MESE</span><strong class="${tone(utileMese,'netto')}">${eur(utileMese)}</strong><small>Dal 1° del mese a oggi</small></article>`;
+  $('#sportDetail').innerHTML=kv(a.cats.sp);
   $('#virtualDetail').innerHTML=kv(a.cats.vt);
   $('#vltDetail').innerHTML=kv(a.cats.aw,'Incassati');
   $('#onlineDetail').innerHTML=kv(online);
@@ -267,9 +271,9 @@ function renderHistory(){
   const month=$('#historyMonth').value||currentMonth;
   const rs=[...db.records].filter(r=>r.data.startsWith(month)).sort((a,b)=>b.data.localeCompare(a.data));
   const total=aggregate(rs);
-  $('#historyList').innerHTML=`<div class="history-summary"><div><span>Periodo</span><strong>${monthLabel(month)}</strong></div><div><span>Giornate</span><strong>${rs.length}</strong></div><div><span>Sport · Giocato</span><strong>${eur(total.cats.sp.g)}</strong></div><div><span>Sport · Utile</span><strong class="${tone(total.cats.sp.lordo,'netto')}">${eur(total.cats.sp.lordo)}</strong></div><div><span>Virtual · Giocato</span><strong>${eur(total.cats.vt.g)}</strong></div></div>`+rs.map(r=>{
+  $('#historyList').innerHTML=`<div class="history-summary"><div><span>Periodo</span><strong>${monthLabel(month)}</strong></div><div><span>Giornate</span><strong>${rs.length}</strong></div><div><span>Sport · Giocato</span><strong>${eur(total.cats.sp.g)}</strong></div><div><span>Sport · Utile mese</span><strong class="${tone(total.cats.sp.lordo,'netto')}">${eur(total.cats.sp.lordo)}</strong></div><div><span>Virtual · Giocato</span><strong>${eur(total.cats.vt.g)}</strong></div></div>`+rs.map(r=>{
     const a=aggregate([r]),on=onlineTotal(a),pdf=num(r.cassaAnaliticaTotale);
-    return `<article class="history-card"><div class="history-head"><strong>${dmy(r.data)}</strong><span>${num(r.conti)} conti aperti${r.cassaAnaliticaTotale!==null&&r.cassaAnaliticaTotale!==undefined?` · Cassa ${eur(pdf)}`:''}</span></div><div class="history-grid"><div class="history-voice"><h4>Sport Agenzia</h4>${kvSport(a.cats.sp)}</div><div class="history-voice"><h4>Virtual Agenzia</h4>${kv(a.cats.vt)}</div><div class="history-voice"><h4>VLT</h4>${kv(a.cats.aw,'Incassati')}</div><div class="history-voice"><h4>Online</h4>${kv(on)}</div></div></article>`;
+    return `<article class="history-card"><div class="history-head"><strong>${dmy(r.data)}</strong><span>${num(r.conti)} conti aperti${r.cassaAnaliticaTotale!==null&&r.cassaAnaliticaTotale!==undefined?` · Cassa ${eur(pdf)}`:''}</span></div><div class="history-grid"><div class="history-voice"><h4>Sport Agenzia</h4>${kv(a.cats.sp)}</div><div class="history-voice"><h4>Virtual Agenzia</h4>${kv(a.cats.vt)}</div><div class="history-voice"><h4>VLT</h4>${kv(a.cats.aw,'Incassati')}</div><div class="history-voice"><h4>Online</h4>${kv(on)}</div></div></article>`;
   }).join('');
 }
 function switchView(view){
