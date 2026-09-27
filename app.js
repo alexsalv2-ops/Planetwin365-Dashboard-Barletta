@@ -37,7 +37,7 @@ function calc(g,p,d){
   const pct=db.settings[d.pctKey]===undefined?d.pct:num(db.settings[d.pctKey]);
   const aggio=d.mode==='lordo'?lordo*(pct/100):g*(pct/100);
   const taxes=aggio*(num(db.settings[d.tax])/100);
-  return {g,p,lordo,netto:aggio-taxes};
+  return {g,p,lordo,aggio,netto:aggio-taxes};
 }
 function aggregate(records){
   const cats={};
@@ -49,11 +49,11 @@ function aggregate(records){
   return {cats,conti:records.reduce((s,r)=>s+num(r.conti),0)};
 }
 function onlineTotal(a){
-  return ['so','vo','co','po'].reduce((o,k)=>{const c=a.cats[k];o.g+=c.g;o.p+=c.p;o.lordo+=c.lordo;o.netto+=c.netto;return o},{g:0,p:0,lordo:0,netto:0});
+  return ['so','vo','co','po'].reduce((o,k)=>{const c=a.cats[k];o.g+=c.g;o.p+=c.p;o.lordo+=c.lordo;o.aggio+=c.aggio;o.netto+=c.netto;return o},{g:0,p:0,lordo:0,aggio:0,netto:0});
 }
 function agencyTotal(a){
   const s=a.cats.sp,v=a.cats.vt;
-  return {g:s.g+v.g,p:s.p+v.p,lordo:s.lordo+v.lordo,netto:s.netto+v.netto};
+  return {g:s.g+v.g,p:s.p+v.p,lordo:s.lordo+v.lordo,aggio:s.aggio+v.aggio,netto:s.netto+v.netto};
 }
 function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function latestDate(){return db.records.length?db.records.at(-1).data:isoLocal(new Date())}
@@ -135,7 +135,7 @@ function shiftPeriod(delta){
 }
 
 function kv(c,played='Giocato'){
-  return `<div class="kv"><div><span>${played}</span><b>${eur(c.g)}</b></div><div><span>Pagato</span><b>${eur(c.p)}</b></div><div><span>Lordo</span><b class="${tone(c.lordo,'lordo')}">${eur(c.lordo)}</b></div><div><span>Netto</span><b class="${tone(c.netto,'netto')}">${eur(c.netto)}</b></div></div>`;
+  return `<div class="kv"><div><span>${played}</span><b>${eur(c.g)}</b></div><div><span>Pagato</span><b>${eur(c.p)}</b></div><div><span>Margine</span><b class="${tone(c.lordo,'lordo')}">${eur(c.lordo)}</b></div><div><span>Aggio Lordo</span><b class="${tone(c.aggio,'netto')}">${eur(c.aggio)}</b></div><div><span>Aggio Netto</span><b class="${tone(c.netto,'netto')}">${eur(c.netto)}</b></div></div>`;
 }
 function currentMonthSportUtile(){
   const today=new Date();
@@ -151,10 +151,12 @@ function renderDashboard(){
   $('#periodTitle').textContent=p.label;
   $('#dayCount').textContent=`${p.records.length} ${p.records.length===1?'giorno':'giorni'}`;
   $('#kpiGrid').innerHTML=`
-    <article class="kpi"><span>TOTALE GIOCATO</span><strong>${eur(agency.g)}</strong><small>Sport + Virtual Agenzia</small></article>
-    <article class="kpi"><span>TOTALE PAGATO</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia</small></article>
-    <article class="kpi orange"><span>LORDO</span><strong class="${tone(agency.lordo,'lordo')}">${eur(agency.lordo)}</strong><small>Giocato − Pagato</small></article>
-    <article class="kpi sport-profit"><span>UTILE SPORT MESE</span><strong class="${tone(utileMese,'netto')}">${eur(utileMese)}</strong><small>Dal 1° del mese a oggi · Da dividere 50/50<br>Quota Agenzia ${eur(quotaSport)} · Concessionario ${eur(quotaSport)}</small></article>`;
+    <article class="kpi"><span>TOTALE GIOCATO</span><strong>${eur(agency.g)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
+    <article class="kpi"><span>TOTALE PAGATO</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
+    <article class="kpi sport-profit"><span>UTILE SPORT TOTALE</span><strong class="${tone(utileMese,'netto')}">${eur(utileMese)}</strong><small>Dal 1° del mese a oggi · 100%</small></article>
+    <article class="kpi sport-share"><span>UTILE SPORT 50%</span><strong class="${tone(quotaSport,'netto')}">${eur(quotaSport)}</strong><small>Quota Agenzia · dal 1° del mese a oggi</small></article>
+    <article class="kpi orange"><span>AGGIO LORDO</span><strong class="${tone(agency.aggio,'netto')}">${eur(agency.aggio)}</strong><small>Sport + Virtual · prima delle imposte</small></article>
+    <article class="kpi green"><span>AGGIO NETTO</span><strong class="${tone(agency.netto,'netto')}">${eur(agency.netto)}</strong><small>Sport + Virtual · dopo le aliquote fiscali</small></article>`;
   $('#sportDetail').innerHTML=kv(a.cats.sp);
   $('#virtualDetail').innerHTML=kv(a.cats.vt);
   $('#vltDetail').innerHTML=kv(a.cats.aw,'Incassati');
