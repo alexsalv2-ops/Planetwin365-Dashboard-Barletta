@@ -152,7 +152,7 @@ function renderDashboard(){
   $('#dayCount').textContent=`${p.records.length} ${p.records.length===1?'giorno':'giorni'}`;
   $('#kpiGrid').innerHTML=`
     <article class="kpi"><span>TOTALE GIOCATO</span><strong>${eur(agency.g)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
-    <article class="kpi"><span>TOTALE PAGATO</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
+    <article class="kpi"><span>TOTALE PAGATO + RIMBORSI</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
     <article class="kpi sport-profit"><span>UTILE SPORT TOTALE</span><strong class="${tone(utileMese,'netto')}">${eur(utileMese)}</strong><small>Dal 1° del mese a oggi · 100%</small></article>
     <article class="kpi sport-share"><span>UTILE SPORT 50%</span><strong class="${tone(quotaSport,'netto')}">${eur(quotaSport)}</strong><small>Quota Agenzia · dal 1° del mese a oggi</small></article>
     <article class="kpi orange"><span>AGGIO LORDO</span><strong class="${tone(agency.aggio,'netto')}">${eur(agency.aggio)}</strong><small>Sport + Virtual · prima delle imposte</small></article>
@@ -371,6 +371,11 @@ function parsePdfRow(text,action,label){
 function parsePdfTotalRow(text,label){
   const re=new RegExp(`Totale\\s+${escapeRe(label)}\\s+\\d+\\s+(-?[\\d.]+,\\d{2})\\s*€`,'i');const m=text.match(re);return m?moneyFromPdf(m[1]):null;
 }
+function parsePdfCashMovement(text,label){
+  const re=new RegExp(`${escapeRe(label)}\\s+\\d+\\s+(-?[\\d.]+,\\d{2})\\s*€`,'i');
+  const m=text.match(re);
+  return m?moneyFromPdf(m[1]):0;
+}
 function parsePlanetPdfText(rawText,fileName=''){
   const text=String(rawText||'').replace(/\s+/g,' ').trim();
   const fromM=text.match(/DA:\s*(\d{2})\/(\d{2})\/(\d{4})/i),toM=text.match(/(?:^|\s)A:\s*(\d{2})\/(\d{2})\/(\d{4})/i);if(!fromM||!toM)throw new Error('Data del report non riconosciuta.');
@@ -381,12 +386,20 @@ function parsePlanetPdfText(rawText,fileName=''){
   const virtualRows={};for(const label of VIRTUAL_LABELS){virtualRows[label]={};for(const a of actions)virtualRows[label][a.toLowerCase()]=parsePdfRow(text,a,label)}
   const sumVirtual=key=>VIRTUAL_LABELS.reduce((s,l)=>s+Math.abs(virtualRows[l][key].value),0);
   const totals={venduto:parsePdfTotalRow(text,'Venduto'),annullato:parsePdfTotalRow(text,'Annullato'),pagato:parsePdfTotalRow(text,'Pagato'),rimborsato:parsePdfTotalRow(text,'Rimborsato')};
+  const movimentiCassa={
+    sovvenzione:parsePdfCashMovement(text,'Sovvenzione'),
+    restituzione:parsePdfCashMovement(text,'Restituzione'),
+    ricaricaVoucher:parsePdfCashMovement(text,'Ricarica Voucher Conto Gioco'),
+    ricaricaDiretta:parsePdfCashMovement(text,'Ricarica Diretta Conto Gioco'),
+    prelievoVoucher:parsePdfCashMovement(text,'Prelievo Voucher Conto Gioco')
+  };
   const topMatch=text.match(/(?:^|\s)Totale\s+(-?[\d.]+,\d{2})\s*€/i),cassaTotale=topMatch?moneyFromPdf(topMatch[1]):null;
-  const calcTotal=[totals.venduto,totals.annullato,totals.pagato,totals.rimborsato].every(v=>v!==null)?totals.venduto+totals.annullato+totals.pagato+totals.rimborsato:null;
+  const extraCash=Object.values(movimentiCassa).reduce((sum,v)=>sum+num(v),0);
+  const calcTotal=[totals.venduto,totals.annullato,totals.pagato,totals.rimborsato].every(v=>v!==null)?totals.venduto+totals.annullato+totals.pagato+totals.rimborsato+extraCash:null;
   const sportNormalized={venduto:Math.abs(sport.venduto.value),annullato:Math.abs(sport.annullato.value),pagato:Math.abs(sport.pagato.value),rimborsato:Math.abs(sport.rimborsato.value)};
   const virtualNormalized={venduto:sumVirtual('venduto'),annullato:sumVirtual('annullato'),pagato:sumVirtual('pagato'),rimborsato:sumVirtual('rimborsato')};
   const utileSport=(sportNormalized.venduto-sportNormalized.annullato)-(sportNormalized.pagato+sportNormalized.rimborsato);
-  return {fileName,date:from,from,to,sport:sportNormalized,virtual:virtualNormalized,utileSport,virtualRows,totals,cassaTotale,calcTotal,difference:cassaTotale!==null&&calcTotal!==null?calcTotal-cassaTotale:null};
+  return {fileName,date:from,from,to,sport:sportNormalized,virtual:virtualNormalized,utileSport,virtualRows,totals,movimentiCassa,cassaTotale,calcTotal,difference:cassaTotale!==null&&calcTotal!==null?calcTotal-cassaTotale:null};
 }
 async function extractPdfText(file){
   if(typeof pdfjsLib==='undefined')throw new Error('Libreria PDF non disponibile. Controlla la connessione Internet e ricarica la pagina.');
@@ -408,7 +421,7 @@ function renderPdfSavedDetail(){
 function renderPdfPreview(p){
   const status=Math.abs(p.difference||0)<0.011?'✓ Chiusura quadrata':p.difference===null?'Totale non verificabile':`⚠ Differenza ${eur(p.difference)}`;
   const utileSport=p.utileSport!==undefined?num(p.utileSport):(num(p.sport?.venduto)-num(p.sport?.annullato))-(num(p.sport?.pagato)+num(p.sport?.rimborsato));
-  $('#pdfImportPreview').innerHTML=`<div class="pdf-preview-card"><div class="pdf-preview-head"><strong>${dmy(p.date)}</strong><span class="${status.startsWith('✓')?'pdf-ok-text':'pdf-warn-text'}">${status}</span></div><div class="pdf-preview-grid"><div class="pdf-utile-tile"><span>Differenza Sport giornata</span><b class="${tone(utileSport,'netto')}">${eur(utileSport)}</b></div><div><span>Sport venduto</span><b>${eur(p.sport.venduto)}</b></div><div><span>Sport annullato</span><b>${eur(p.sport.annullato)}</b></div><div><span>Sport pagato</span><b>${eur(p.sport.pagato)}</b></div><div><span>Virtual venduto</span><b>${eur(p.virtual.venduto)}</b></div><div><span>Virtual annullato</span><b>${eur(p.virtual.annullato)}</b></div><div><span>Virtual pagato</span><b>${eur(p.virtual.pagato)}</b></div><div><span>Totale report</span><b>${p.cassaTotale===null?'—':eur(p.cassaTotale)}</b></div><div><span>Totale ricalcolato</span><b>${p.calcTotal===null?'—':eur(p.calcTotal)}</b></div></div></div>`;
+  $('#pdfImportPreview').innerHTML=`<div class="pdf-preview-card"><div class="pdf-preview-head"><strong>${dmy(p.date)}</strong><span class="${status.startsWith('✓')?'pdf-ok-text':'pdf-warn-text'}">${status}</span></div><div class="pdf-preview-grid"><div class="pdf-utile-tile"><span>Differenza Sport giornata</span><b class="${tone(utileSport,'netto')}">${eur(utileSport)}</b></div><div><span>Sport venduto</span><b>${eur(p.sport.venduto)}</b></div><div><span>Sport annullato</span><b>${eur(p.sport.annullato)}</b></div><div><span>Sport pagato</span><b>${eur(p.sport.pagato)}</b></div><div><span>Sport rimborsato</span><b>${eur(p.sport.rimborsato)}</b></div><div><span>Sport pagato effettivo</span><b>${eur(p.sport.pagato+p.sport.rimborsato)}</b></div><div><span>Virtual venduto</span><b>${eur(p.virtual.venduto)}</b></div><div><span>Virtual annullato</span><b>${eur(p.virtual.annullato)}</b></div><div><span>Virtual pagato</span><b>${eur(p.virtual.pagato)}</b></div><div><span>Totale report</span><b>${p.cassaTotale===null?'—':eur(p.cassaTotale)}</b></div><div><span>Totale ricalcolato</span><b>${p.calcTotal===null?'—':eur(p.calcTotal)}</b></div></div></div>`;
 }
 async function importPdf(){
   const file=$('#pdfFile').files?.[0];if(!file){$('#pdfImportStatus').textContent='Seleziona prima il PDF di chiusura.';return}
