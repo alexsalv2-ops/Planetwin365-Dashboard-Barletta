@@ -42,18 +42,38 @@ function calc(g,p,d){
 function aggregate(records){
   const cats={};
   for(const [k,d] of Object.entries(defs)){
-    const g=records.reduce((s,r)=>s+num(r[d.g]),0);
-    const p=records.reduce((s,r)=>s+num(r[d.p]),0);
-    cats[k]=calc(g,p,d);
+    if(k==='sp'||k==='vt'){
+      const rawKey=k==='sp'?'sport':'virtual';
+      let g=0,p=0,refunds=0,paidOut=0;
+      for(const r of records){
+        const raw=r.planetRaw?.[rawKey];
+        if(raw){
+          const vend=num(raw.venduto),ann=num(raw.annullato),pag=num(raw.pagato),rim=num(raw.rimborsato);
+          g+=vend-ann-rim;
+          p+=pag;
+          refunds+=rim;
+          paidOut+=pag+rim;
+        }else{
+          g+=num(r[d.g]);
+          p+=num(r[d.p]);
+          paidOut+=num(r[d.p]);
+        }
+      }
+      cats[k]={...calc(g,p,d),refunds,paidOut};
+    }else{
+      const g=records.reduce((sum,r)=>sum+num(r[d.g]),0);
+      const p=records.reduce((sum,r)=>sum+num(r[d.p]),0);
+      cats[k]={...calc(g,p,d),refunds:0,paidOut:p};
+    }
   }
-  return {cats,conti:records.reduce((s,r)=>s+num(r.conti),0)};
+  return {cats,conti:records.reduce((sum,r)=>sum+num(r.conti),0)};
 }
 function onlineTotal(a){
   return ['so','vo','co','po'].reduce((o,k)=>{const c=a.cats[k];o.g+=c.g;o.p+=c.p;o.lordo+=c.lordo;o.aggio+=c.aggio;o.netto+=c.netto;return o},{g:0,p:0,lordo:0,aggio:0,netto:0});
 }
 function agencyTotal(a){
   const s=a.cats.sp,v=a.cats.vt;
-  return {g:s.g+v.g,p:s.p+v.p,lordo:s.lordo+v.lordo,aggio:s.aggio+v.aggio,netto:s.netto+v.netto};
+  return {g:s.g+v.g,p:s.p+v.p,refunds:s.refunds+v.refunds,paidOut:s.paidOut+v.paidOut,lordo:s.lordo+v.lordo,aggio:s.aggio+v.aggio,netto:s.netto+v.netto};
 }
 function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function latestDate(){return db.records.length?db.records.at(-1).data:isoLocal(new Date())}
@@ -152,7 +172,7 @@ function renderDashboard(){
   $('#dayCount').textContent=`${p.records.length} ${p.records.length===1?'giorno':'giorni'}`;
   $('#kpiGrid').innerHTML=`
     <article class="kpi"><span>TOTALE GIOCATO</span><strong>${eur(agency.g)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
-    <article class="kpi"><span>TOTALE PAGATO + RIMBORSI</span><strong>${eur(agency.p)}</strong><small>Sport + Virtual Agenzia · periodo selezionato</small></article>
+    <article class="kpi"><span>TOTALE PAGATO + RIMBORSI</span><strong>${eur(agency.paidOut)}</strong><small>Vincite ${eur(agency.p)} + Rimborsi ${eur(agency.refunds)}</small></article>
     <article class="kpi sport-profit"><span>UTILE SPORT TOTALE</span><strong class="${tone(utileMese,'netto')}">${eur(utileMese)}</strong><small>Dal 1° del mese a oggi · 100%</small></article>
     <article class="kpi sport-share"><span>UTILE SPORT 50%</span><strong class="${tone(quotaSport,'netto')}">${eur(quotaSport)}</strong><small>Quota Agenzia · dal 1° del mese a oggi</small></article>
     <article class="kpi orange"><span>AGGIO LORDO</span><strong class="${tone(agency.aggio,'netto')}">${eur(agency.aggio)}</strong><small>Sport + Virtual · prima delle imposte</small></article>
